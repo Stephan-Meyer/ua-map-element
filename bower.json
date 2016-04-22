@@ -23,10 +23,11 @@
   ],
   "dependencies": {
     "polymer": "Polymer/polymer#^1.0.0",
-    "openlayers3-dist": "^3.10.1",
+    "ol3-bower": "^3.12.1",
     "sidebar-v2": "https://github.com/Turbo87/sidebar-v2/archive/v0.3.0.tar.gz",
     "paper-toggle-button": "PolymerElements/paper-toggle-button#^1.0.0",
     "paper-progress": "PolymerElements/paper-progress#^1.0.0",
+    "paper-material": "PolymerElements/paper-material#^1.0.0",
     "iron-selector": "^1.4.0"
   },
   "devDependencies": {
