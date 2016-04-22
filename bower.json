@@ -1,6 +1,6 @@
 {
   "name": "ua-map-element",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "authors": [
     "Stephan Meyer Stephan@Urbanautomation.co.za"
   ],
@@ -15,20 +15,23 @@
   "license": "http://polymer.github.io/LICENSE.txt",
   "homepage": "https://github.com/stephan-meyer/ua-map-element.html",
   "ignore": [
-    "/.*",
+    "/.gitattributes",
+    "/.gitignore",
     "/test/",
-    "/demo/"
+    "/demo/",
+    "/bower_components/"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#^1.0.0"
-  },
-  "devDependencies": {
-    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
-    "web-component-tester": "*",
+    "polymer": "Polymer/polymer#^1.0.0",
     "openlayers3-dist": "^3.10.1",
     "sidebar-v2": "https://github.com/Turbo87/sidebar-v2/archive/v0.3.0.tar.gz",
     "paper-toggle-button": "PolymerElements/paper-toggle-button#^1.0.0",
     "paper-progress": "PolymerElements/paper-progress#^1.0.0",
     "iron-selector": "^1.4.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "web-component-tester": "*"
+    
   }
 }
