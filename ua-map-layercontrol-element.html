@@ -1,0 +1,124 @@
+﻿
+<dom-module id="ua-map-layercontrol-element">
+    <style>
+        :host {
+            background-color: black;
+        }
+
+        .sidebar-header {
+            background-color: #17BAA3 !important;
+        }
+
+        paper-slider.orange {
+            --paper-slider-knob-color: rgba(243, 111, 70, 1);
+            --paper-slider-active-color: rgba(243, 111, 70, 1);
+        }
+
+        paper-toggle-button.orange {
+            --paper-toggle-button-checked-bar-color: rgba(243, 111, 70, 1);
+            --paper-toggle-button-checked-button-color: rgba(243, 111, 70, 1);
+            --paper-toggle-button-checked-ink-color: rgba(243, 111, 70, 1);
+            --paper-toggle-button-unchecked-bar-color: rgba(243, 111, 70, 0.4);
+            --paper-toggle-button-unchecked-button-color: rgba(243, 111, 70, 0.4);
+            --paper-toggle-button-unchecked-ink-color: rgba(243, 111, 70, 0.4);
+        }
+    </style>
+    <template>
+        <h1 class="sidebar-header">
+            <strong>LAYERS</strong>
+            <div class="sidebar-close"><i class="fa fa-caret-left"></i></div>
+        </h1>
+        <paper-material elevation="2" style="padding:10px">
+            <h4 style="color:rgba(243, 111, 70, 1)">Base Layers</h4>
+            <template is="dom-repeat" items="{{baseLayers}}">
+                <div><paper-toggle-button on-change="change" class$="baseToggle{{item.layerId}} orange baseToggle"  checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button></div>
+            </template>
+        </paper-material>
+
+        <paper-material elevation="2" style="padding:10px">
+            <h4 style="color:rgba(243, 111, 70, 1)">Other Layers</h4>
+            <template is="dom-repeat" items="{{wmsLayers}}">
+                <div>
+                    <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
+                    <paper-slider hidden$="{{!item.layerVisibleBool}}" class="orange" style="padding-left:35px; width:100%" min="0" max="100" value="{{item.layerOpacity}}"></paper-slider>
+                </div>
+            </template>
+            <template is="dom-repeat" items="{{vectorLayers}}">
+                <div>
+                    <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
+                    <paper-slider hidden$="{{!item.layerVisibleBool}}" class="orange" style="padding-left:35px; width:100%" min="0" max="100" value="{{item.layerOpacity}}"></paper-slider>
+                </div>
+            </template>
+        </paper-material>
+
+    </template>
+    <script>
+
+        Polymer({
+
+            is: 'ua-map-layercontrol-element',
+
+            properties: {
+                map: {
+                    type: Object,
+                    notify: true,
+                    value: null
+                },
+                baseLayers: {
+                    type: Array,
+                    value: function () { return []; }
+                },
+                wmsLayers: {
+                    type: Array,
+                    value: function () { return []; }
+                },
+                vectorLayers: {
+                    type: Array,
+                    value: function () { return []; }
+                },
+            },
+            change: function () {
+                var _th = this;
+                $.each(_th.baseLayers, function (index, value) {
+                    if (!value.layerVisibleBool)
+                        $('.baseToggle' + value.layerId).prop('checked', false);
+                });
+
+            },
+            // Element Lifecycle
+            ready: function () {
+                // `ready` is called after all elements have been configured, but
+                // propagates bottom-up. This element's children are ready, but parents
+                // are not.
+                //
+                // This is the point where you should make modifications to the DOM (when
+                // necessary), or kick off any processes the element wants to perform.
+                var _th = this;
+
+            },
+
+            attached: function () {
+                // `attached` fires once the element and its parents have been inserted
+                // into a document.
+                //
+                // This is a good place to perform any work related to your element's
+                // visual state or active behavior (measuring sizes, beginning animations,
+                // loading resources, etc).
+                var _th = this;
+
+            },
+
+            detached: function () {
+                // The analog to `attached`, `detached` fires when the element has been
+                // removed from a document.
+                //
+                // Use this to clean up anything you did in `attached`.
+                var _th = this;
+
+
+
+            }
+        });
+
+    </script>
+</dom-module>

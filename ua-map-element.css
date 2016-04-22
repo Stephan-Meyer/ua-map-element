@@ -1,0 +1,69 @@
+﻿
+.ol-control button {
+    background-color: rgba(243, 111, 70, 0.75) !important;
+}
+
+    .ol-control button:focus, .ol-control button:hover {
+        background-color: rgba(243, 111, 70, 1) !important;
+    }
+
+
+
+.sidebar-tabs {
+    background-color: rgba(97, 98, 98, 0.74);
+}
+
+
+.sidebar-left ~ .sidebar-map .ol-scale-line {
+  margin-left: 46px; }
+  @media (min-width: 768px) {
+    .sidebar-left ~ .sidebar-map .ol-scale-line {
+      transition: margin-left 500ms; } }
+  @media (min-width: 768px) and (max-width: 991px) {
+    .sidebar-left ~ .sidebar-map .ol-scale-line {
+      margin-left: 317px; } }
+  @media (min-width: 992px) and (max-width: 1199px) {
+    .sidebar-left ~ .sidebar-map .ol-scale-line {
+      margin-left: 402px; } }
+  @media (min-width: 1200px) {
+    .sidebar-left ~ .sidebar-map .ol-scale-line {
+      margin-left: 472px; } }
+
+@media (min-width: 768px) {
+  .sidebar-left.collapsed ~ .sidebar-map .ol-scale-line {
+    margin-left: 52px; } }
+
+.sidebar-map:full-screen {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+            }
+
+            .sidebar-map:-ms-fullscreen {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+            }
+
+            .sidebar-map:-moz-full-screen {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+            }
+
+            .sidebar-map:-webkit-full-screen {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+            }
+
+            .sidebar {
+                z-index: 1049 !important;
+            }
+
+
+
+            .sidebar-tabs > li.active, .sidebar-tabs > ul > li.active {
+                color: rgba(243, 111, 70, 1);
+                background-color: #17BAA3;
+            }

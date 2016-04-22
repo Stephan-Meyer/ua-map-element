@@ -1,0 +1,174 @@
+﻿
+<dom-module id="ua-map-baselayer-element">
+    <style>
+        :host {
+            display: none;
+        }
+    </style>
+    <template>
+        <content></content>
+
+    </template>
+    <script>
+
+        Polymer({
+
+            is: 'ua-map-baselayer-element',
+
+            properties: {
+                map: {
+                    type: Object,
+                    notify: true,
+                    value: null
+                },
+                layerId: String,
+                layerVisible: String,
+                layername: String,
+                source: String,
+                imageryset: String,
+                key: String,
+                _baseLayerTotal: {
+                    type: Number,
+                    value: 0
+                },
+                _baseLayerProgressNum: {
+                    type: Number,
+                    value: 0
+                },
+                _baseLayerProgressPerc: {
+                    type: Number,
+                    computed: 'computebaseLayerProgressPerc(_baseLayerProgressNum, _baseLayerTotal)'
+                },
+                _baseLayerLoaderHidden: {
+                    type: Boolean,
+                    computed: 'computebaseLayerLoaderHidden(_baseLayerTotal,_baseLayerProgressNum)',
+                    observer: 'baseLayerLoaderHiddenChanged'
+                },
+                layerVisibleBool: {
+                    type: Boolean,
+                    observer: 'layerVisibleBoolChanged',
+                    value: true
+                }
+            },
+            computebaseLayerProgressPerc: function (baseLayerProgressNum, baseLayerTotal) {
+                return baseLayerProgressNum / baseLayerTotal * 100.0000;
+            },
+            computebaseLayerLoaderHidden: function (baseLayerTotal, baseLayerProgressNum) {
+                return baseLayerTotal == baseLayerProgressNum;
+            },
+            baseLayerLoaderHiddenChanged: function (newValue, oldValue) {
+                if (newValue == true) {
+                    this._baseLayerTotal = 0;
+                    this._baseLayerProgressNum = 0;
+                    Polymer.dom(this).parentNode.baseLayerProgressPerc = -1;
+                }
+            },
+            layerVisibleBoolChanged: function (newValue, oldValue) {
+                var _th = this;
+                if (oldValue != newValue) {
+                    if (this.map) {
+                        if (newValue)
+                            $.each(Polymer.dom(this).parentNode.baseLayers, function (index, value) {
+                                if (value.layerId != _th.layerId) {
+                                    value.layerVisibleBool = false;
+                                }
+                            });
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setVisible(newValue);
+                    }
+                }
+            },
+            // Element Lifecycle
+            ready: function () {
+                // `ready` is called after all elements have been configured, but
+                // propagates bottom-up. This element's children are ready, but parents
+                // are not.
+                //
+                // This is the point where you should make modifications to the DOM (when
+                // necessary), or kick off any processes the element wants to perform.
+            },
+
+            attached: function () {
+                // `attached` fires once the element and its parents have been inserted
+                // into a document.
+                //
+                // This is a good place to perform any work related to your element's
+                // visual state or active behavior (measuring sizes, beginning animations,
+                // loading resources, etc).
+                var _th = this;
+                _th.layerVisibleBool = _th.layerVisible ? (_th.layerVisible === "true" ? true : false) : true;
+
+                var source = null;
+                switch (_th.source) {
+
+                    case "BingMaps": {
+                        source = new ol.source.BingMaps({
+                            key: _th.key,
+                            imagerySet: _th.imageryset,
+                        })
+                        break;
+
+                    }
+                    case "MapQuest": {
+                        source = new ol.source.MapQuest({ layer: 'osm' });
+
+                        break;
+                    }
+                    case "OSM": {
+                        source = new ol.source.OSM();
+
+
+                        break;
+                    }
+                }
+                var mapNode = Polymer.dom(this).parentNode;
+                source.on('tileloadstart', function (event) {
+                    _th._baseLayerTotal++;
+                    Polymer.dom(_th).parentNode.baseLayerProgressPerc = _th._baseLayerProgressPerc;
+                    //Polymer.dom(_th).parentNode.baseLayerLoaderHidden = _th._baseLayerLoaderHidden;
+                });
+
+                source.on('tileloadend', function (event) {
+                    setTimeout(function () {
+                        _th._baseLayerProgressNum++;
+                        Polymer.dom(_th).parentNode.baseLayerProgressPerc = _th._baseLayerProgressPerc;
+                    }, 50);
+                });
+                source.on('tileloaderror', function (event) {
+                    setTimeout(function () {
+                        _th._baseLayerProgressNum++;
+                        Polymer.dom(_th).parentNode.baseLayerProgressPerc = _th._baseLayerProgressPerc;
+                    }, 50);
+                });
+
+                _th.map.addLayer(new ol.layer.Tile({
+                    source: source,
+                    visible: this.layerVisibleBool,
+                    id: this.layerId ? this.layerId : _th.map.getLayers().getArray().length
+
+                }));
+
+            },
+
+            detached: function () {
+                // The analog to `attached`, `detached` fires when the element has been
+                // removed from a document.
+                //
+                // Use this to clean up anything you did in `attached`.
+                var _th = this;
+                _th.map.removeLayer(_th.getLayer());
+            },
+            getLayer: function () {
+                var _th = this;
+                var layer = null;
+                $.each(_th.map.getLayers().getArray(), function (i, l) {
+                    if (l.get('id') == _th.layerId)
+                        layer = l;
+                });
+                return layer;
+            }
+        });
+
+    </script>
+</dom-module>

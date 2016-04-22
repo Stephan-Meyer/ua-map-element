@@ -1,0 +1,170 @@
+﻿
+<dom-module id="ua-map-wmslayer-element">
+    <style>
+        :host {
+            display: none;
+        }
+    </style>
+    <template>
+        <content></content>
+
+    </template>
+    <script>
+
+        Polymer({
+
+            is: 'ua-map-wmslayer-element',
+
+            properties: {
+                map: {
+                    type: Object,
+                    notify: true,
+                    value: null
+                },
+                layerId: String,
+                layerVisible: String,
+                layername: String,
+                source: String,
+                serverType: String,
+                sldUrl: String,
+                serverUrl: String,
+                serverLayerName: String,
+                _tileLayerTotal: {
+                    type: Number,
+                    value: 0
+                },
+                _tileLayerProgressNum: {
+                    type: Number,
+                    value: 0
+                },
+                _tileLayerProgressPerc: {
+                    type: Number,
+                    computed: 'computetileLayerProgressPerc(_tileLayerProgressNum, _tileLayerTotal)'
+                },
+                _tileLayerLoaderHidden: {
+                    type: Boolean,
+                    computed: 'computetileLayerLoaderHidden(_tileLayerTotal,_tileLayerProgressNum)',
+                    observer: 'tileLayerLoaderHiddenChanged'
+                },
+                layerVisibleBool: {
+                    type: Boolean,
+                    observer: 'layerVisibleBoolChanged',
+                    value: true
+                },
+                layerOpacity: {
+                    type: Number,
+                    observer: 'layerOpacityChanged',
+                    value : 100
+                }
+            },
+            computetileLayerProgressPerc: function (tileLayerProgressNum, tileLayerTotal) {
+                return tileLayerProgressNum / tileLayerTotal * 100.0000;
+            },
+            computetileLayerLoaderHidden: function (tileLayerTotal, tileLayerProgressNum) {
+                return tileLayerTotal == tileLayerProgressNum;
+            },
+            layerVisibleBoolChanged: function (newValue, oldValue) {
+                if (oldValue != newValue) {
+                    if (this.map) {
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setVisible(newValue);
+                    }
+                }
+            },
+            tileLayerLoaderHiddenChanged: function (newValue, oldValue) {
+                if (newValue == true) {
+                    this._tileLayerTotal = 0;
+                    this._tileLayerProgressNum = 0;
+                    Polymer.dom(this).parentNode.tileLayerProgressPerc = -1;
+                }
+            },
+            layerOpacityChanged: function (newValue, oldValue) {
+                if (newValue != oldValue) {
+                    if (this.map) {
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setOpacity(newValue / 100.00);
+                    }
+                }
+            },
+            
+            // Element Lifecycle
+            ready: function () {
+                // `ready` is called after all elements have been configured, but
+                // propagates bottom-up. This element's children are ready, but parents
+                // are not.
+                //
+                // This is the point where you should make modifications to the DOM (when
+                // necessary), or kick off any processes the element wants to perform.
+            },
+
+            attached: function () {
+                // `attached` fires once the element and its parents have been inserted
+                // into a document.
+                //
+                // This is a good place to perform any work related to your element's
+                // visual state or active behavior (measuring sizes, beginning animations,
+                // loading resources, etc).
+                var _th = this;
+                var source = null;
+                var mapNode = Polymer.dom(this).parentNode;
+                _th.layerVisibleBool = _th.layerVisible ? (_th.layerVisible === "true" ? true : false) : true;
+                var source = new ol.source.TileWMS(/** @type {olx.source.TileWMSOptions} */({
+                    url: this.serverUrl,
+                    params: {
+                        'LAYERS': this.serverLayerName,
+                        'SLD': this.sldUrl
+                    },
+                    serverType: this.serverType,
+
+                }));
+                source.on('tileloadstart', function (event) {
+                    _th._tileLayerTotal++;
+                    Polymer.dom(_th).parentNode.tileLayerProgressPerc = _th._tileLayerProgressPerc;
+                });
+
+                source.on('tileloadend', function (event) {
+                    setTimeout(function () {
+                        _th._tileLayerProgressNum++;
+                        Polymer.dom(_th).parentNode.tileLayerProgressPerc = _th._tileLayerProgressPerc;
+                    }, 50);
+                });
+                source.on('tileloaderror', function (event) {
+                    setTimeout(function () {
+                        _th._tileLayerProgressNum++;
+                        Polymer.dom(_th).parentNode.tileLayerProgressPerc = _th._tileLayerProgressPerc;
+                    }, 50);
+                });
+                _th.map.addLayer(new ol.layer.Tile({
+                    source: source,
+                    visible: this.layerVisibleBool,
+                    id: this.layerId ? this.layerId : _th.map.getLayers().getArray().length
+                }));
+
+            },
+
+            detached: function () {
+                // The analog to `attached`, `detached` fires when the element has been
+                // removed from a document.
+                //
+                // Use this to clean up anything you did in `attached`.
+                var _th = this;
+                _th.map.removeLayer(_th.getLayer());
+
+            },
+            getLayer: function () {
+                var _th = this;
+                var layer = null;
+
+                $.each(_th.map.getLayers().getArray(), function (i, l) {
+
+                    if (l.get('id') == _th.layerId)
+                        layer = l;
+                });
+                return layer;
+            }
+        });
+
+    </script>
+</dom-module>

@@ -1,0 +1,287 @@
+﻿<link rel="import" href="ua-map-point-element.html">
+<dom-module id="ua-map-vectorlayer-element">
+    <style>
+        :host {
+            display: none;
+        }
+    </style>
+    <template>
+        <content>
+            <iron-selector id="selectorFeatures" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
+                <content id="features" select="ua-map-point-element"></content>
+            </iron-selector>
+        </content>
+
+    </template>
+    <script>
+
+        Polymer({
+
+            is: 'ua-map-vectorlayer-element',
+
+            properties: {
+                map: {
+                    type: Object,
+                    notify: true,
+                    value: null
+                },
+                layerId: String,
+                layerVisible: String,
+                layername: String,
+                layerVisibleBool: {
+                    type: Boolean,
+                    observer: 'layerVisibleBoolChanged',
+                    value: true
+                },
+                layerOpacity: {
+                    type: Number,
+                    observer: 'layerOpacityChanged',
+                    value: 100
+                },
+                features: {
+                    type: Array,
+                    value: function () { return []; },
+                    readOnly: true
+                },
+                zoomToExtent: {
+                    type: Boolean,
+                    value: false
+                },
+                styles: {
+                    type: Object,
+                    value: {
+                        'Point': [
+
+                            new ol.style.Style({
+                                image: new ol.style.Circle({
+                                    radius: 3 * 2,
+                                    fill: new ol.style.Fill({
+                                        color: [0, 153, 255, 1]
+                                    }),
+                                    stroke: new ol.style.Stroke({
+                                        color: [255, 255, 255, 1],
+                                        width: 3 / 2
+                                    })
+                                }),
+                                zIndex: Infinity
+                            })],
+                        'LineString': [new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: 'green',
+                                width: 1
+                            })
+                        })],
+                        'MultiLineString': [new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: 'green',
+                                width: 1
+                            })
+                        })],
+                        'MultiPolygon': [new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: 'blue',
+                                width: 2
+                            }),
+                            fill: new ol.style.Fill({
+                                color: 'rgba(255, 255, 0, 0.5)'
+                            })
+                        })],
+                        'Polygon': [new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: 'blue',
+                                width: 2
+                            }),
+                            fill: new ol.style.Fill({
+                                color: 'rgba(255, 255, 0, 0.5)'
+                            })
+                        })],
+                        'GeometryCollection': [new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: 'magenta',
+                                width: 2
+                            }),
+                            fill: new ol.style.Fill({
+                                color: 'magenta'
+                            }),
+                            image: new ol.style.Circle({
+                                radius: 10,
+                                fill: null,
+                                stroke: new ol.style.Stroke({
+                                    color: 'magenta'
+                                })
+                            })
+                        })],
+                        'Circle': [new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: 'red',
+                                width: 2
+                            }),
+                            fill: new ol.style.Fill({
+                                color: 'rgba(255,0,0,0.2)'
+                            })
+                        })]
+                    }
+                }
+            },
+            layerVisibleBoolChanged: function (newValue, oldValue) {
+                if (oldValue != newValue) {
+                    if (this.map) {
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setVisible(newValue);
+                    }
+                }
+            },
+            layerOpacityChanged: function (newValue, oldValue) {
+                if (newValue != oldValue) {
+                    if (this.map) {
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setOpacity(newValue / 100.00);
+                    }
+                }
+            },
+
+            // Element Lifecycle
+            ready: function () {
+                // `ready` is called after all elements have been configured, but
+                // propagates bottom-up. This element's children are ready, but parents
+                // are not.
+                //
+                // This is the point where you should make modifications to the DOM (when
+                // necessary), or kick off any processes the element wants to perform.
+            },
+
+            attached: function () {
+                // `attached` fires once the element and its parents have been inserted
+                // into a document.
+                //
+                // This is a good place to perform any work related to your element's
+                // visual state or active behavior (measuring sizes, beginning animations,
+                // loading resources, etc).
+                var _th = this;
+                var source = null;
+                var mapNode = Polymer.dom(this).parentNode;
+                _th.layerVisibleBool = _th.layerVisible ? (_th.layerVisible === "true" ? true : false) : true;
+                var source = new ol.source.Vector();
+                var styleFunction = function (feature, resolution) {
+                    if (feature.get('attributes') && feature.get('attributes').markerImgName && feature.get('attributes').markerImgName != "") {
+                        return new ol.style.Style({
+                            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
+                                anchor: [0.5, 32],
+                                anchorXUnits: 'fraction',
+                                anchorYUnits: 'pixels',
+                                opacity: 0.75,
+                                src: "app/ua-map-element/images/" + feature.get('attributes').markerImgName,
+                            }))
+                        })
+                    }
+                    return _th.styles[feature.getGeometry().getType()];
+                };
+
+                this.layer = new ol.layer.Vector({
+                    source: source,
+                    visible: this.layerVisibleBool,
+                    id: this.layerId ? this.layerId : _th.map.getLayers().getArray().length,
+                    style: styleFunction,
+                    projection: "EPSG:3857"
+                })
+                _th.map.addLayer(this.layer);
+
+                this._updateFeature();
+
+            },
+
+            detached: function () {
+                // The analog to `attached`, `detached` fires when the element has been
+                // removed from a document.
+                //
+                // Use this to clean up anything you did in `attached`.
+                var _th = this;
+                _th.map.removeLayer(_th.getLayer());
+
+                if (this._mutationObserverFeature) {
+                    this._mutationObserverFeature.disconnect();
+                    this._mutationObserverFeature = null;
+                }
+
+            },
+            _updateFeature: function () {
+                var newFeature = Array.prototype.slice.call(
+                    Polymer.dom(this.$.features).getDistributedNodes());
+
+                // do not recompute if markers have not been added or removed
+                if (newFeature.length === this.features.length) {
+                    var added = newFeature.filter(function (m) {
+                        return this.features && this.features.indexOf(m) === -1;
+                    }.bind(this));
+                    if (added.length === 0) {
+                        // set up observer first time around
+                        if (!this._mutationObserverFeature) {
+                            this._observeFeature();
+                        }
+                        return;
+                    }
+                }
+
+                this._observeFeature();
+
+                this.features = this._setFeature(newFeature);
+
+                //// Set the map on each marker and zoom viewport to ensure they're in view.
+                this._attachChildrenToLayer(this.features);
+            },
+            // watch for future updates to marker objects
+            _observeFeature: function () {
+                // Watch for future updates.
+                if (this._mutationObserverFeature) {
+                    return;
+                }
+                this._mutationObserverFeature = new MutationObserver(this._updateFeature.bind(this));
+                this._mutationObserverFeature.observe(this.$.selectorFeatures, {
+                    childList: true
+                });
+            },
+            _attachChildrenToLayer: function (children) {
+
+                if (this.layer) {
+                    for (var i = 0, child; child = children[i]; ++i) {
+                        child.layer = this.getLayer();
+                    }
+                }
+            },
+            getLayer: function () {
+                var _th = this;
+                var layer = null;
+
+                $.each(_th.map.getLayers().getArray(), function (i, l) {
+
+                    if (l.get('id') == _th.layerId)
+                        layer = l;
+                });
+                return layer;
+            },
+            zoomToExtent: function () {
+                var _th = this;
+                var extent = _th.layer.getSource().getExtent();
+                if (!isFinite(extent[0]))
+                    return;
+                var duration = 1000;
+                var start = +new Date();
+                var pan = ol.animation.pan({
+                    duration: duration,
+                    source: (_th.map.getView().getCenter()),
+                    start: start
+                });
+                var bounce = ol.animation.zoom({
+                    duration: duration,
+                    resolution: _th.map.getView().getResolution(),
+                    start: start
+                });
+                _th.map.beforeRender(pan, bounce);
+                _th.map.getView().fit(extent, _th.map.getSize());
+            }
+        });
+
+    </script>
+</dom-module>
