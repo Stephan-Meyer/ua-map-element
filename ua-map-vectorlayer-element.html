@@ -178,13 +178,14 @@
                     }
                     return _th.styles[feature.getGeometry().getType()];
                 };
-
+                debugger;
                 this.layer = new ol.layer.Vector({
                     source: source,
                     visible: this.layerVisibleBool,
                     id: this.layerId ? this.layerId : _th.map.getLayers().getArray().length,
                     style: styleFunction,
-                    projection: "EPSG:3857"
+                    projection: "EPSG:3857",
+                    opacity: this.layerOpacity / 100.00
                 })
                 _th.map.addLayer(this.layer);
 
