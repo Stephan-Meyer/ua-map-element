@@ -61,7 +61,7 @@
             <!-- Nav tabs -->
             <div class="sidebar-tabs">
                 <ul role="tablist">
-                    <li><a href="#baselayers" role="tab"><i class="fa fa-map"></i></a></li>
+                    <li><a href="#baselayers" role="tab"><i class="mdi-map mdi"></i></a></li>
                 </ul>
                 <ul role="tablist"></ul>
             </div>
@@ -116,7 +116,7 @@
                     notify: true,
                     value: null
                 },
-                baseLayers: {
+               baseLayers: {
                     type: Array,
                     value: function () { return []; },
                     readOnly: true
@@ -131,6 +131,10 @@
                     value: function () { return []; },
                     readOnly: true
                 },
+                zoomExtent: {
+                    type: Object,
+                    observer: "_zoomExtentChanged"
+                }
             },
             computeLayerLoaderHidden: function (baseLayerProgressPerc, tileLayerProgressPerc) {
                 return (isNaN(baseLayerProgressPerc) || baseLayerProgressPerc == 100 || baseLayerProgressPerc == -1 || baseLayerProgressPerc == 0)
@@ -315,8 +319,420 @@
                     }
                 }
             },
+            _zoomExtentChanged: function (newValue, oldValue) {
+
+                transformedExtent1 = new Array();
+                transformedExtent2 = new Array();
+                Extent1 = new Array();
+                Extent2 = new Array();
+                transformedExtent = new Array();
+                transformedExtent1.push(newValue[0]);
+                transformedExtent1.push(newValue[1]);
+                transformedExtent2.push(newValue[2]);
+                transformedExtent2.push(newValue[3]);
+                Extent1.push(ol.proj.transform(transformedExtent1, 'EPSG:4326', 'EPSG:3857'));
+                Extent2.push(ol.proj.transform(transformedExtent2, 'EPSG:4326', 'EPSG:3857'));
+                transformedExtent.push(Extent1[0][0]);
+                transformedExtent.push(Extent1[0][1]);
+                transformedExtent.push(Extent2[0][0]);
+                transformedExtent.push(Extent2[0][1]);
+                this.zoomToExtent(transformedExtent);
+
+            },
+            zoomToExtent: function (extent) {
+                var _th = this;
+                if (!isFinite(extent[0]))
+                    return;
+                var duration = 1000;
+                var start = +new Date();
+                var pan = ol.animation.pan({
+                    duration: duration,
+                    source: (_th.map.getView().getCenter()),
+                    start: start
+                });
+                var bounce = ol.animation.zoom({
+                    duration: duration,
+                    resolution: _th.map.getView().getResolution(),
+                    start: start
+                });
+                _th.map.beforeRender(pan, bounce);
+                _th.map.getView().fit(extent, _th.map.getSize());
+            }
 
         });
 
     </script>
 </dom-module>
+
+
+From: Stephan Meyer
+Sent: Friday, 29 April 2016 5:01 PM
+To: Stephan Meyer <stephan@urbanautomation.co.za>
+    Subject: ua-map-element
+
+    <script src="../ol3-bower/ol.js"></script>
+    <link href="../ol3-bower/ol.css" rel="stylesheet" />
+    <script src="../sidebar-v2/js/jquery-sidebar.js"></script>
+    <link href="../sidebar-v2/css/ol3-sidebar.css" rel="stylesheet" />
+    <link rel="import" href="../polymer/polymer.html" />
+    <link rel="import" href="../iron-selector/iron-selector.html">
+    <link rel="import" href="../paper-progress/paper-progress.html" />
+    <link rel="import" href="../paper-slider/paper-slider.html" />
+    <link rel="import" href="../paper-toggle-button/paper-toggle-button.html" />
+    <link rel="import" href="../paper-material/paper-material.html" />
+
+    <link href="ua-map-element.css" rel="stylesheet" />
+    <link rel="import" href="ua-map-baselayer-element.html">
+    <link rel="import" href="ua-map-wmslayer-element.html">
+    <link rel="import" href="ua-map-wfslayer-element.html">
+    <link rel="import" href="ua-map-layercontrol-element.html">
+    <link rel="import" href="ua-map-vectorlayer-element.html">
+    <dom-module id="ua-map-element">
+        <template>
+            <style>
+                    paper-progress {
+                        display: block;
+                        width: 100%;
+                    }
+
+                    :host {
+                        position: relative;
+                        display: block;
+                        height: 100%;
+                    }
+
+                    #ol3-map {
+                        position: absolute;
+                        top: 0;
+                        right: 0;
+                        bottom: 0;
+                        left: 0;
+                    }
+
+                    /*:host {
+                    position: relative;
+                    display: block;
+                    height: 100%;
+                }*/
+
+                    /*#ol3-map {
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    bottom: 0;
+                    left: 0;
+                }*/
+
+                    .ua-map-paper-progress {
+                        --paper-progress-active-color: #F36F46;
+                        --paper-progress-secondary-color: yellow;
+                    }
+            </style>
+            <!--<paper-material elevation="5">-->
+            <div id="sidebar" class="sidebar collapsed drop">
+                <!-- Nav tabs -->
+                <div class="sidebar-tabs">
+                    <ul role="tablist">
+                        <li><a href="#baselayers" role="tab"><i class="mdi-map mdi"></i></a></li>
+                    </ul>
+                    <ul role="tablist"></ul>
+                </div>
+                <!-- Tab panes -->
+                <div class="sidebar-content">
+                    <div class="sidebar-pane" id="baselayers" style="padding-left:0px;padding-right:0px">
+                        <ua-map-layercontrol-element map="{{map}}" base-layers="{{baseLayers}}" wms-layers="{{wmsLayers}}" vector-layers="{{vectorLayers}}"></ua-map-layercontrol-element>
+                    </div>
+                    <div class="sidebar-pane" id="linkedlo">
+
+
+                    </div>
+                </div>
+            </div>
+            <div id="ol3-map" class="sidebar-map">
+                <paper-progress id="baseLayerProgress" style="position: absolute;z-index: 200;" class="ua-map-paper-progress" hidden$="{{layerLoaderHidden}}" value="{{baseLayerProgressPerc}}" secondary-progress="{{tileLayerProgressPerc}}"></paper-progress>
+            </div>
+            <iron-selector id="selectorBase" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
+                <content id="baselayers" select="ua-map-baselayer-element"></content>
+            </iron-selector>
+            <iron-selector id="selectorWms" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
+                <content id="wmslayers" select="ua-map-wmslayer-element"></content>
+            </iron-selector>
+            <iron-selector id="selectorVector" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
+                <content id="vectorlayers" select="ua-map-vectorlayer-element"></content>
+            </iron-selector>
+            <!--</paper-material>-->
+        </template>
+        <script>
+
+        Polymer({
+
+            is: 'ua-map-element',
+
+            properties: {
+                //Loading Bar for WMS layer
+                baseLayerProgressPerc: {
+                    type: Number,
+                    value: 0
+                },
+                layerLoaderHidden: {
+                    type: Boolean,
+                    computed: 'computeLayerLoaderHidden(baseLayerProgressPerc, tileLayerProgressPerc)'
+                },
+                tileLayerProgressPerc: {
+                    type: Number,
+                    value: 0
+                },
+
+                map: {
+                    type: Object,
+                    notify: true,
+                    value: null
+                },
+                baseLayers: {
+                    type: Array,
+                    value: function () { return []; },
+                    readOnly: true
+                },
+                wmsLayers: {
+                    type: Array,
+                    value: function () { return []; },
+                    readOnly: true
+                },
+                vectorLayers: {
+                    type: Array,
+                    value: function () { return []; },
+                    readOnly: true
+                },
+                zoomExtent: {
+                    type: Object,
+                    observer: "_zoomExtentChanged"
+                }
+            },
+            computeLayerLoaderHidden: function (baseLayerProgressPerc, tileLayerProgressPerc) {
+                return (isNaN(baseLayerProgressPerc) || baseLayerProgressPerc == 100 || baseLayerProgressPerc == -1 || baseLayerProgressPerc == 0)
+                && (isNaN(tileLayerProgressPerc) || tileLayerProgressPerc == 100 || tileLayerProgressPerc == -1 || tileLayerProgressPerc == 0);
+            },
+            // Element Lifecycle
+            ready: function () {
+                // `ready` is called after all elements have been configured, but
+                // propagates bottom-up. This element's children are ready, but parents
+                // are not.
+                //
+                // This is the point where you should make modifications to the DOM (when
+                // necessary), or kick off any processes the element wants to perform.
+            },
+
+            attached: function () {
+                // `attached` fires once the element and its parents have been inserted
+                // into a document.
+                //
+                // This is a good place to perform any work related to your element's
+                // visual state or active behavior (measuring sizes, beginning animations,
+                // loading resources, etc).
+                var _th = this;
+                _th.map = new ol.Map({
+                    target: this.$['ol3-map'],
+                    controls: ol.control.defaults().extend([
+                        new ol.control.ScaleLine(),
+                        new ol.control.FullScreen(),
+                        new ol.control.Rotate()
+                    ]),
+                    view: new ol.View({
+                        center: [2866694.308807251, -3783327.1520030843],
+                        zoom: 5,
+                        maxZoom: 19
+                    })
+                });
+                $('#sidebar').sidebar();
+                this._updateBaseLayers();
+                this._updatewmsLayers();
+                this._updateVectorLayers();
+
+
+                //this.$['sidebar'].sidebar();
+            },
+
+            detached: function () {
+                // The analog to `attached`, `detached` fires when the element has been
+                // removed from a document.
+                //
+                // Use this to clean up anything you did in `attached`.
+                if (this._mutationObserverBase) {
+                    this._mutationObserverBase.disconnect();
+                    this._mutationObserverBase = null;
+                }
+
+                if (this._mutationObserverWms) {
+                    this._mutationObserverWms.disconnect();
+                    this._mutationObserverWms = null;
+                }
+
+                if (this._mutationObserverVector) {
+                    this._mutationObserverVector.disconnect();
+                    this._mutationObserverVector = null;
+                }
+
+            },
+
+            _updateVectorLayers: function () {
+                var newVectorLayers = Array.prototype.slice.call(
+                    Polymer.dom(this.$.vectorlayers).getDistributedNodes());
+
+                // do not recompute if markers have not been added or removed
+                if (newVectorLayers.length === this.vectorLayers.length) {
+                    var added = newVectorLayers.filter(function (m) {
+                        return this.vectorLayers && this.vectorLayers.indexOf(m) === -1;
+                    }.bind(this));
+                    if (added.length === 0) {
+                        // set up observer first time around
+                        if (!this._mutationObserverVector) {
+                            this._observeVectorLayers();
+                        }
+                        return;
+                    }
+                }
+
+                this._observeVectorLayers();
+
+                this.vectorLayers = this._setVectorLayers(newVectorLayers);
+
+                //// Set the map on each marker and zoom viewport to ensure they're in view.
+                this._attachChildrenToMap(this.vectorLayers);
+            },
+            // watch for future updates to marker objects
+            _observeVectorLayers: function () {
+                // Watch for future updates.
+                if (this._mutationObserverVector) {
+                    return;
+                }
+                this._mutationObserverVector = new MutationObserver(this._updateVectorLayers.bind(this));
+                this._mutationObserverVector.observe(this.$.selectorVector, {
+                    childList: true
+                });
+            },
+
+            _updateBaseLayers: function () {
+                var newBaseLayers = Array.prototype.slice.call(
+                    Polymer.dom(this.$.baselayers).getDistributedNodes());
+
+                // do not recompute if markers have not been added or removed
+                if (newBaseLayers.length === this.baseLayers.length) {
+                    var added = newBaseLayers.filter(function (m) {
+                        return this.baseLayers && this.baseLayers.indexOf(m) === -1;
+                    }.bind(this));
+                    if (added.length === 0) {
+                        // set up observer first time around
+                        if (!this._mutationObserverBase) {
+                            this._observeBaseLayers();
+                        }
+                        return;
+                    }
+                }
+
+                this._observeBaseLayers();
+
+                this.baseLayers = this._setBaseLayers(newBaseLayers);
+
+                //// Set the map on each marker and zoom viewport to ensure they're in view.
+                this._attachChildrenToMap(this.baseLayers);
+            },
+            // watch for future updates to marker objects
+            _observeBaseLayers: function () {
+                // Watch for future updates.
+                if (this._mutationObserverBase) {
+                    return;
+                }
+                this._mutationObserverBase = new MutationObserver(this._updateBaseLayers.bind(this));
+                this._mutationObserverBase.observe(this.$.selectorBase, {
+                    childList: true
+                });
+            },
+
+            _updatewmsLayers: function () {
+                var newwmsLayers = Array.prototype.slice.call(
+                    Polymer.dom(this.$.wmslayers).getDistributedNodes());
+
+                // do not recompute if markers have not been added or removed
+                if (newwmsLayers.length === this.wmsLayers.length) {
+                    var added = newwmsLayers.filter(function (m) {
+                        return this.wmsLayers && this.wmsLayers.indexOf(m) === -1;
+                    }.bind(this));
+                    if (added.length === 0) {
+                        // set up observer first time around
+                        if (!this._mutationObserverWms) {
+                            this._observewmsLayers();
+                        }
+                        return;
+                    }
+                }
+
+                this._observewmsLayers();
+
+                this.wmsLayers = this._setWmsLayers(newwmsLayers);
+
+                //// Set the map on each marker and zoom viewport to ensure they're in view.
+                this._attachChildrenToMap(this.wmsLayers);
+            },
+            // watch for future updates to marker objects
+            _observewmsLayers: function () {
+                // Watch for future updates.
+                if (this._mutationObserver) {
+                    return;
+                }
+                this._mutationObserverWms = new MutationObserver(this._updatewmsLayers.bind(this));
+                this._mutationObserverWms.observe(this.$.selectorWms, {
+                    childList: true
+                });
+            },
+            _attachChildrenToMap: function (children) {
+                if (this.map) {
+                    for (var i = 0, child; child = children[i]; ++i) {
+                        child.map = this.map;
+                    }
+                }
+            },
+            _zoomExtentChanged: function (newValue, oldValue) {
+                if (newValue != oldValue) {
+                    transformedExtent1 = new Array();
+                    transformedExtent2 = new Array();
+                    Extent1 = new Array();
+                    Extent2 = new Array();
+                    transformedExtent = new Array();
+                    transformedExtent1.push(newValue[0]);
+                    transformedExtent1.push(newValue[1]);
+                    transformedExtent2.push(newValue[2]);
+                    transformedExtent2.push(newValue[3]);
+                    Extent1.push(ol.proj.transform(transformedExtent1, 'EPSG:4326', 'EPSG:3857'));
+                    Extent2.push(ol.proj.transform(transformedExtent2, 'EPSG:4326', 'EPSG:3857'));
+                    transformedExtent.push(Extent1[0][0]);
+                    transformedExtent.push(Extent1[0][1]);
+                    transformedExtent.push(Extent2[0][0]);
+                    transformedExtent.push(Extent2[0][1]);
+                    this.zoomToExtent(transformedExtent);
+                }
+            },
+            zoomToExtent: function (extent) {
+                var _th = this;
+                if (!isFinite(extent[0]))
+                    return;
+                var duration = 1000;
+                var start = +new Date();
+                var pan = ol.animation.pan({
+                    duration: duration,
+                    source: (_th.map.getView().getCenter()),
+                    start: start
+                });
+                var bounce = ol.animation.zoom({
+                    duration: duration,
+                    resolution: _th.map.getView().getResolution(),
+                    start: start
+                });
+                _th.map.beforeRender(pan, bounce);
+                _th.map.getView().fit(extent, _th.map.getSize());
+            }
+
+        });
+
+        </script>
+    </dom-module>
+
