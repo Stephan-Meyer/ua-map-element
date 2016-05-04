@@ -343,7 +343,7 @@
             },
             zoomToExtent: function (extent) {
                 var _th = this;
-                if (!isFinite(extent[0]))
+                if (!isFinite(extent[0]) || !_th.map)
                     return;
                 var duration = 1000;
                 var start = +new Date();

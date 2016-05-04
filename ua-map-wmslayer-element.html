@@ -93,6 +93,7 @@
                 }
             },
             cqlFilterChanged: function (newValue, oldValue) {
+                debugger;
                 if (newValue != oldValue) {
                     if (this.map) {
                         var layer = this.getLayer();
@@ -101,7 +102,7 @@
                     }
                 }
             },
-            
+
             // Element Lifecycle
             ready: function () {
                 // `ready` is called after all elements have been configured, but
@@ -123,9 +124,9 @@
                 var source = null;
                 var mapNode = Polymer.dom(this).parentNode;
                 _th.layerVisibleBool = _th.layerVisible ? (_th.layerVisible === "true" ? true : false) : true;
-                
+
                 this.getParams();
-               
+
                 var source = new ol.source.TileWMS(/** @type {olx.source.TileWMSOptions} */({
                     url: this.serverUrl,
                     params: this.getParams(),
@@ -182,7 +183,9 @@
 
                 var params = {
                     'LAYERS': this.serverLayerName,
-                    'tiled': true
+                    'tiled': true,
+                    cql_filter: null,
+                    SLD:null
                 };
                 if (this.sldUrl)
                     params.SLD = this.sldUrl;
