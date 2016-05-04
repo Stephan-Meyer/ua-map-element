@@ -181,7 +181,8 @@
             getParams: function () {
 
                 var params = {
-                    'LAYERS': this.serverLayerName
+                    'LAYERS': this.serverLayerName,
+                    'tiled': true
                 };
                 if (this.sldUrl)
                     params.SLD = this.sldUrl;
