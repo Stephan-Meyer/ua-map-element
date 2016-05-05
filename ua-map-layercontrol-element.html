@@ -31,7 +31,7 @@
         <paper-material elevation="2" style="padding:10px">
             <h4 style="color:rgba(243, 111, 70, 1)">Base Layers</h4>
             <template is="dom-repeat" items="{{baseLayers}}">
-                <div><paper-toggle-button on-change="change" class$="baseToggle{{item.layerId}} orange baseToggle"  checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button></div>
+                <div><paper-toggle-button on-change="change" class$="baseToggle{{item.layerId}} orange baseToggle" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button></div>
             </template>
         </paper-material>
 
@@ -52,8 +52,18 @@
         </paper-material>
         <paper-material elevation="2" style="padding:10px">
             <h4 style="color:rgba(243, 111, 70, 1)">Legend</h4>
-            <img src='http://154.0.169.128:8080/geoserver/wms?Service=WMS&REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=12&HEIGHT=12&LAYER=cite:EFMSSchools&width=25&height=25&legend_options=fontName:Roboto;fontAntiAliasing:true;fontColor:0x000033;fontSize:7;dpi:180' />
+            <template is="dom-repeat" items="{{wmsLayers}}" filter="_isLayerVisible">
+                <div>
+                    <img src='{{getLegendUrl(item)}}' />
+                </div>
+            </template>
+            <template is="dom-repeat" items="{{vectorLayers}}" filter="_isLayerVisible">
+                <div>
+                    <img src='{{getLegendUrl(item)}}' />
+                </div>
+            </template>
         </paper-material>
+
     </template>
     <script>
 
@@ -120,6 +130,14 @@
 
 
 
+            },
+            _isLayerVisible: function(layer) {
+                if (!layer) return false;
+                return layer.layerVisibleBool;
+            },
+            getLegendUrl: function (layer) {
+                if (!layer) return false;
+                return 'http://154.0.169.128:8080/geoserver/wms?Service=WMS&REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=12&HEIGHT=12&LAYER=' + layer.serverLayerName + '&width=25&height=25&legend_options=fontName:Roboto;fontAntiAliasing:true;fontColor:0x000033;fontSize:7;dpi:180';
             }
         });
 
