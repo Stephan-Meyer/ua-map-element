@@ -322,7 +322,7 @@
                 }
             },
             _zoomExtentChanged: function (newValue, oldValue) {
-                if (newValue != oldValue) {
+
                     transformedExtent1 = new Array();
                     transformedExtent2 = new Array();
                     Extent1 = new Array();
@@ -339,7 +339,7 @@
                     transformedExtent.push(Extent2[0][0]);
                     transformedExtent.push(Extent2[0][1]);
                     this.zoomToExtent(transformedExtent);
-                }
+
             },
             zoomToExtent: function (extent) {
                 var _th = this;
