@@ -14,6 +14,11 @@
             --paper-slider-active-color: rgba(243, 111, 70, 1);
         }
 
+        paper-slider.green {
+            --paper-slider-knob-color: rgb(70, 243, 133);
+            --paper-slider-active-color: rgb(70, 243, 133);
+        }
+
         paper-toggle-button.orange {
             --paper-toggle-button-checked-bar-color: rgba(243, 111, 70, 1);
             --paper-toggle-button-checked-button-color: rgba(243, 111, 70, 1);
@@ -45,8 +50,20 @@
             </template>
             <template is="dom-repeat" items="{{vectorLayers}}">
                 <div>
-                    <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
-                    <paper-slider hidden$="{{!item.layerVisibleBool}}" class="orange" style="padding-left:35px; width:100%" min="0" max="100" value="{{item.layerOpacity}}"></paper-slider>
+                    <paper-material elevation="2" style="padding:10px">
+                        <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
+                        <div hidden$="{{!item.layerVisibleBool}}" style="padding-left:35px;">
+                            <paper-toggle-button class="green" checked="{{item.enableLabels}}">Show Labels?</paper-toggle-button>
+                            <paper-slider class="orange" style="width:100%" min="0" max="100" value="{{item.layerOpacity}}"></paper-slider>
+                        </div>
+                    </paper-material>
+                </div>
+            </template>
+            <template is="dom-repeat" items="{{computedHtmlElementLayers}}">
+                <div>
+                    <paper-material elevation="2" style="padding:10px">
+                        <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
+                    </paper-material>
                 </div>
             </template>
         </paper-material>
@@ -57,11 +74,11 @@
                     <img src='{{getLegendUrl(item)}}' />
                 </div>
             </template>
-            <template is="dom-repeat" items="{{vectorLayers}}" filter="_isLayerVisible">
+            <!--<template is="dom-repeat" items="{{vectorLayers}}" filter="_isLayerVisible">
                 <div>
                     <img src='{{getLegendUrl(item)}}' />
                 </div>
-            </template>
+            </template>-->
         </paper-material>
 
     </template>
@@ -89,6 +106,37 @@
                     type: Array,
                     value: function () { return []; }
                 },
+                htmlElements: {
+                    type: Array,
+                    value: function () { return []; }
+                },
+                computedHtmlElementLayers: {
+                    type: Object,
+                    computed: '_computedHtmlElementLayers(htmlElements)'
+                }
+
+            },
+            observers: [
+                '_computedHtmlElementLayersVisChange(computedHtmlElementLayers.*)'
+            ],
+            _computedHtmlElementLayersVisChange: function (newValue) {
+                if (newValue.base.length > 0)
+                    debugger;
+                    $.each(this.htmlElements, function (index, value) {
+                        if (newValue.base[0].layername == value.layerName)
+                            value.layerVisibleBool = newValue.base[0].layerVisibleBool;
+                    });
+            },
+            _computedHtmlElementLayers: function (htmlElements) {
+                var distinctLayerNames = new Array();
+                var layers = new Array();
+                $.each(htmlElements, function (index, value) {
+                    if (distinctLayerNames.indexOf(value.layerName) < 0) {
+                        distinctLayerNames.push(value.layerName);
+                        layers.push({ layername: value.layerName, layerVisibleBool: value.layerVisibleBool });
+                    }
+                });
+                return layers;
             },
             change: function () {
                 var _th = this;
@@ -131,7 +179,7 @@
 
 
             },
-            _isLayerVisible: function(layer) {
+            _isLayerVisible: function (layer) {
                 if (!layer) return false;
                 return layer.layerVisibleBool;
             },

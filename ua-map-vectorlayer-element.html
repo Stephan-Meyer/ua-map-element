@@ -6,7 +6,7 @@
         }
     </style>
     <template>
-        <content>
+        <content id="{{layerId}}">
             <iron-selector id="selectorFeatures" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
                 <content id="features" select="ua-map-point-element"></content>
             </iron-selector>
@@ -47,14 +47,19 @@
                     type: Boolean,
                     value: false
                 },
+                enableLabels: {
+                    type: Boolean,
+                    value: false,
+                    observer: "enableLabelsChanged"
+                },
                 styles: {
                     type: Object,
                     value: {
                         'Point': [
 
-                            new ol.style.Style({
+                            {
                                 image: new ol.style.Circle({
-                                    radius: 3 * 2,
+                                    radius: 3 * 20,
                                     fill: new ol.style.Fill({
                                         color: [0, 153, 255, 1]
                                     }),
@@ -63,21 +68,21 @@
                                         width: 3 / 2
                                     })
                                 }),
-                                zIndex: Infinity
-                            })],
-                        'LineString': [new ol.style.Style({
+
+                            }],
+                        'LineString': [{
                             stroke: new ol.style.Stroke({
                                 color: 'green',
                                 width: 1
                             })
-                        })],
-                        'MultiLineString': [new ol.style.Style({
+                        }],
+                        'MultiLineString': [{
                             stroke: new ol.style.Stroke({
                                 color: 'green',
                                 width: 1
                             })
-                        })],
-                        'MultiPolygon': [new ol.style.Style({
+                        }],
+                        'MultiPolygon': [{
                             stroke: new ol.style.Stroke({
                                 color: 'blue',
                                 width: 2
@@ -85,8 +90,8 @@
                             fill: new ol.style.Fill({
                                 color: 'rgba(255, 255, 0, 0.5)'
                             })
-                        })],
-                        'Polygon': [new ol.style.Style({
+                        }],
+                        'Polygon': [{
                             stroke: new ol.style.Stroke({
                                 color: 'blue',
                                 width: 2
@@ -94,8 +99,8 @@
                             fill: new ol.style.Fill({
                                 color: 'rgba(255, 255, 0, 0.5)'
                             })
-                        })],
-                        'GeometryCollection': [new ol.style.Style({
+                        }],
+                        'GeometryCollection': [{
                             stroke: new ol.style.Stroke({
                                 color: 'magenta',
                                 width: 2
@@ -110,8 +115,8 @@
                                     color: 'magenta'
                                 })
                             })
-                        })],
-                        'Circle': [new ol.style.Style({
+                        }],
+                        'Circle': [{
                             stroke: new ol.style.Stroke({
                                 color: 'red',
                                 width: 2
@@ -119,7 +124,7 @@
                             fill: new ol.style.Fill({
                                 color: 'rgba(255,0,0,0.2)'
                             })
-                        })]
+                        }]
                     }
                 }
             },
@@ -141,6 +146,17 @@
                     }
                 }
             },
+            enableLabelsChanged: function (newValue, oldValue) {
+                if (newValue != oldValue) {
+                    if (this.map) {
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setStyle(newValue ? this.styleFunctionWithLabels : this.styleFunctionWithoutLabels);
+                    }
+                }
+            },
+
+
 
             // Element Lifecycle
             ready: function () {
@@ -164,26 +180,14 @@
                 var mapNode = Polymer.dom(this).parentNode;
                 _th.layerVisibleBool = _th.layerVisible ? (_th.layerVisible === "true" ? true : false) : true;
                 var source = new ol.source.Vector();
-                var styleFunction = function (feature, resolution) {
-                    if (feature.get('attributes') && feature.get('attributes').markerImgName && feature.get('attributes').markerImgName != "") {
-                        return new ol.style.Style({
-                            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
-                                anchor: [0.5, 32],
-                                anchorXUnits: 'fraction',
-                                anchorYUnits: 'pixels',
-                                opacity: 0.75,
-                                src: "lib/ua-map-element/images/" + feature.get('attributes').markerImgName,
-                            }))
-                        })
-                    }
-                    return _th.styles[feature.getGeometry().getType()];
-                };
-                debugger;
+
+
+
                 this.layer = new ol.layer.Vector({
                     source: source,
                     visible: this.layerVisibleBool,
                     id: this.layerId ? this.layerId : _th.map.getLayers().getArray().length,
-                    style: styleFunction,
+                    style: this.enableLabels ? this.styleFunctionWithLabels : this.styleFunctionWithoutLabels,
                     projection: "EPSG:3857",
                     opacity: this.layerOpacity / 100.00
                 })
@@ -191,6 +195,122 @@
 
                 this._updateFeature();
 
+            },
+
+            styleFunctionWithLabels: function (feature, resolution) {
+                var createTextStyle = function (feature, resolution, dom) {
+                    var align = "center";
+                    var baseline = "middle";
+                    var size = "12px";
+                    var offsetX = 0;
+                    var offsetY = 0;
+                    var weight = "normal";
+                    var rotation = 0;
+                    var font = weight + ' ' + size + ' ' + 'Roboto';
+                    var fillColor = "White";
+                    var outlineColor = "Black";
+                    var outlineWidth = 3;
+
+                    return new ol.style.Text({
+                        textAlign: align,
+                        textBaseline: baseline,
+                        font: font,
+                        text: getText(feature, resolution, dom),
+                        fill: new ol.style.Fill({ color: fillColor }),
+                        stroke: new ol.style.Stroke({ color: outlineColor, width: outlineWidth }),
+                        offsetX: offsetX,
+                        offsetY: offsetY,
+                        rotation: rotation
+                    });
+                };
+
+                var getText = function (feature, resolution, dom) {
+                    //var type = dom.text.value;
+                    //var maxResolution = dom.maxreso.value;
+                    if (feature.get('attributes') && feature.get('attributes').label)
+                        var text = feature.get('attributes').label;
+
+                    //if (resolution > maxResolution) {
+                    //    text = '';
+                    //} else if (type == 'hide') {
+                    //    text = '';
+                    //} else if (type == 'shorten') {
+                    //    text = text.trunc(12);
+                    //} else if (type == 'wrap') {
+                    //    text = stringDivider(text, 16, '\n');
+                    //}
+
+                    return text;
+                };
+                debugger;
+                if (feature.get('attributes') && feature.get('attributes').markerImgName && feature.get('attributes').markerImgName != "") {
+                    var style = new ol.style.Style({
+                        text: createTextStyle(feature, resolution, null),
+                        image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
+                            anchor: [0.5, 32],
+                            anchorXUnits: 'fraction',
+                            anchorYUnits: 'pixels',
+                            opacity: 0.75,
+                            src: "lib/ua-map-element/images/" + feature.get('attributes').markerImgName,
+
+                        }))
+                    })
+                    return style;
+                }
+                var _th = Polymer.dom($('#' + feature.get('attributes').layerId)).node[0];
+                var styleParams = _th.styles[feature.getGeometry().getType()];
+
+
+                styleParams.text = createTextStyle(feature, resolution, null)
+
+                if (feature.get('attributes').radius)
+                    style = new ol.style.Style({
+                        image: new ol.style.Circle({
+                            radius: feature.get('attributes').radius,
+                            fill: new ol.style.Fill({
+                                color: "#FF9800"
+                            }),
+                            stroke: new ol.style.Stroke({
+                                color: [255, 255, 255, 1],
+                                width: 3 / 2
+                            })
+                        })
+                        , text: createTextStyle(feature, resolution, null),
+                    });
+                return style;
+            },
+            styleFunctionWithoutLabels: function (feature, resolution) {
+                if (feature.get('attributes') && feature.get('attributes').markerImgName && feature.get('attributes').markerImgName != "") {
+                    var style = new ol.style.Style({
+                        image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
+                            anchor: [0.5, 32],
+                            anchorXUnits: 'fraction',
+                            anchorYUnits: 'pixels',
+                            opacity: 0.75,
+                            src: "lib/ua-map-element/images/" + feature.get('attributes').markerImgName,
+
+                        }))
+                    })
+                    return style;
+                }
+                var _th = Polymer.dom($('#' + feature.get('attributes').layerId)).node[0];
+                var style = new ol.style.Style(_th.styles[feature.getGeometry().getType()]);
+
+                if (feature.get('attributes').radius)
+                    style = new ol.style.Style({
+                        image: new ol.style.Circle({
+                            radius: feature.get('attributes').radius,
+                            fill: new ol.style.Fill({
+                                color: "#FF9800"
+                            }),
+                            stroke: new ol.style.Stroke({
+                                color: [255, 255, 255, 1],
+                                width: 3 / 2
+                            })
+                        })
+
+                    });
+                return style;
             },
 
             detached: function () {
