@@ -1,6 +1,6 @@
 {
   "name": "ua-map-element",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "authors": [
     "Stephan Meyer Stephan@Urbanautomation.co.za"
   ],
@@ -29,6 +29,7 @@
     "paper-progress": "PolymerElements/paper-progress#^1.0.0",
     "paper-material": "PolymerElements/paper-material#^1.0.0",
     "paper-slider": "PolymerElements/paper-slider#^1.0.0",
+    "paper-button": "PolymerElements/paper-button#^1.0.0",
     "iron-selector": "^1.4.0"
   },
   "devDependencies": {
