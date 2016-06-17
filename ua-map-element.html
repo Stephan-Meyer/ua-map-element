@@ -10,6 +10,7 @@
 <link rel="import" href="../paper-slider/paper-slider.html" />
 <link rel="import" href="../paper-toggle-button/paper-toggle-button.html" />
 <link rel="import" href="../paper-material/paper-material.html" />
+<link rel="import" href="../paper-button/paper-button.html" />
 
 <link href="ua-map-element.css" rel="stylesheet" />
 <link rel="import" href="ua-map-baselayer-element.html">
@@ -17,6 +18,7 @@
 <link rel="import" href="ua-map-wfslayer-element.html">
 <link rel="import" href="ua-map-layercontrol-element.html">
 <link rel="import" href="ua-map-vectorlayer-element.html">
+<link rel="import" href="ua-map-html-element.html">
 <dom-module id="ua-map-element">
     <template>
         <style>
@@ -70,7 +72,7 @@
             <!-- Tab panes -->
             <div class="sidebar-content">
                 <div class="sidebar-pane" id="baselayers" style="padding-left:0px;padding-right:0px">
-                    <ua-map-layercontrol-element map="{{map}}" base-layers="{{baseLayers}}" wms-layers="{{wmsLayers}}" vector-layers="{{vectorLayers}}"></ua-map-layercontrol-element>
+                    <ua-map-layercontrol-element map="{{map}}" base-layers="{{baseLayers}}" wms-layers="{{wmsLayers}}" vector-layers="{{vectorLayers}}" html-elements="{{htmlOverlays}}"></ua-map-layercontrol-element>
                 </div>
                 <div class="sidebar-pane" id="linkedlo">
 
@@ -78,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <div id="ol3-map" class="sidebar-map">
+        <div id="ol3-map" class="sidebar-map ol3-map">
             <paper-progress id="baseLayerProgress" style="position: absolute;z-index: 200;" class="ua-map-paper-progress" hidden$="{{layerLoaderHidden}}" value="{{baseLayerProgressPerc}}" secondary-progress="{{tileLayerProgressPerc}}"></paper-progress>
         </div>
         <iron-selector id="selectorBase" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
@@ -89,6 +91,9 @@
         </iron-selector>
         <iron-selector id="selectorVector" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
             <content id="vectorlayers" select="ua-map-vectorlayer-element"></content>
+        </iron-selector>
+        <iron-selector id="selectorHtmlOverlays" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
+            <content id="htmlOverlays" select="ua-map-html-element"></content>
         </iron-selector>
         <!--</paper-material>-->
     </template>
@@ -133,6 +138,11 @@
                     value: function () { return []; },
                     readOnly: true
                 },
+                htmlOverlays: {
+                    type: Array,
+                    value: function () { return []; },
+                    readOnly: true
+                },
                 zoomExtent: {
                     type: Object,
                     observer: "_zoomExtentChanged"
@@ -173,11 +183,15 @@
                         maxZoom: 19
                     })
                 });
+                _th.map.on('click', function (evt) {
+                    _th.fire('map-click', evt);
+                });
                 $('#sidebar').sidebar();
                 this._updateBaseLayers();
                 this._updatewmsLayers();
                 this._updateVectorLayers();
-
+                this._updateHtmlOverlays();
+                $(this.$['ol3-map']).data('map', _th.map);
 
                 //this.$['sidebar'].sidebar();
             },
@@ -202,6 +216,46 @@
                     this._mutationObserverVector = null;
                 }
 
+                if (this._mutationObserverHtmlOverlays) {
+                    this._mutationObserverHtmlOverlays.disconnect();
+                    this._mutationObserverHtmlOverlays = null;
+                }
+            },
+
+            _updateHtmlOverlays: function () {
+                var newhtmlOverlays = Array.prototype.slice.call(
+                    Polymer.dom(this.$.htmlOverlays).getDistributedNodes());
+
+                // do not recompute if markers have not been added or removed
+                if (newhtmlOverlays.length === this.htmlOverlays.length) {
+                    var added = newhtmlOverlays.filter(function (m) {
+                        return this.htmlOverlays && this.htmlOverlays.indexOf(m) === -1;
+                    }.bind(this));
+                    if (added.length === 0) {
+                        // set up observer first time around
+                        if (!this._mutationObserverHtmlOverlays) {
+                            this._observeHtmlOverlays();
+                        }
+                        return;
+                    }
+                }
+
+                this._observeHtmlOverlays();
+               
+                this.htmlOverlays = this._setHtmlOverlays(newhtmlOverlays);
+                //// Set the map on each marker and zoom viewport to ensure they're in view.
+                this._attachChildrenToMap(this.htmlOverlays);
+            },
+            // watch for future updates to marker objects
+            _observeHtmlOverlays: function () {
+                // Watch for future updates.
+                if (this._mutationObserverHtmlOverlays) {
+                    return;
+                }
+                this._mutationObserverHtmlOverlays = new MutationObserver(this._updateHtmlOverlays.bind(this));
+                this._mutationObserverHtmlOverlays.observe(this.$.selectorHtmlOverlays, {
+                    childList: true
+                });
             },
 
             _updateVectorLayers: function () {
@@ -322,7 +376,6 @@
                 }
             },
             _zoomExtentChanged: function (newValue, oldValue) {
-                if (newValue != oldValue) {
                     transformedExtent1 = new Array();
                     transformedExtent2 = new Array();
                     Extent1 = new Array();
@@ -339,7 +392,7 @@
                     transformedExtent.push(Extent2[0][0]);
                     transformedExtent.push(Extent2[0][1]);
                     this.zoomToExtent(transformedExtent);
-                }
+
             },
             zoomToExtent: function (extent) {
                 var _th = this;
