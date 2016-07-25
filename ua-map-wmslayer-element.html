@@ -29,6 +29,7 @@
                 sldUrl: String,
                 serverUrl: String,
                 serverLayerName: String,
+                gutter:Number,
                 cqlFilter: {
                     type: String,
                     observer: 'cqlFilterChanged',
@@ -125,12 +126,11 @@
                 _th.layerVisibleBool = _th.layerVisible ? (_th.layerVisible === "true" ? true : false) : true;
 
                 this.getParams();
-
                 var source = new ol.source.TileWMS(/** @type {olx.source.TileWMSOptions} */({
                     url: this.serverUrl,
                     params: this.getParams(),
                     serverType: this.serverType,
-
+                    gutter: typeof this.gutter != 'undefined' ? this.gutter: 0
                 }));
                 source.on('tileloadstart', function (event) {
                     _th._tileLayerTotal++;
