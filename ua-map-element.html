@@ -18,6 +18,7 @@
 <link rel="import" href="ua-map-wfslayer-element.html">
 <link rel="import" href="ua-map-layercontrol-element.html">
 <link rel="import" href="ua-map-vectorlayer-element.html">
+<link rel="import" href="ua-map-clusterlayer-element.html">
 <link rel="import" href="ua-map-html-element.html">
 <dom-module id="ua-map-element">
     <template>
@@ -82,6 +83,7 @@
         </div>
         <div id="ol3-map" class="sidebar-map ol3-map">
             <paper-progress id="baseLayerProgress" style="position: absolute;z-index: 200;" class="ua-map-paper-progress" hidden$="{{layerLoaderHidden}}" value="{{baseLayerProgressPerc}}" secondary-progress="{{tileLayerProgressPerc}}"></paper-progress>
+            <paper-progress style="position: absolute;z-index: 200;" class="ua-map-paper-progress" hidden$="{{!loading}}" indeterminate></paper-progress>
         </div>
         <iron-selector id="selectorBase" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
             <content id="baselayers" select="ua-map-baselayer-element"></content>
@@ -91,6 +93,9 @@
         </iron-selector>
         <iron-selector id="selectorVector" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
             <content id="vectorlayers" select="ua-map-vectorlayer-element"></content>
+        </iron-selector>
+        <iron-selector id="selectorCluster" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
+            <content id="Clusterlayers" select="ua-map-clusterlayer-element"></content>
         </iron-selector>
         <iron-selector id="selectorHtmlOverlays" multi="[[!singleInfoWindow]]" selected-attribute="open" activate-event="google-map-marker-open" on-google-map-marker-close="_deselectMarker">
             <content id="htmlOverlays" select="ua-map-html-element"></content>
@@ -138,6 +143,11 @@
                     value: function () { return []; },
                     readOnly: true
                 },
+                ClusterLayers: {
+                    type: Array,
+                    value: function () { return []; },
+                    readOnly: true
+                },
                 htmlOverlays: {
                     type: Array,
                     value: function () { return []; },
@@ -146,7 +156,12 @@
                 zoomExtent: {
                     type: Object,
                     observer: "_zoomExtentChanged"
+                },
+                loading: {
+                    type: Boolean,
+                    value:false
                 }
+                
             },
             computeLayerLoaderHidden: function (baseLayerProgressPerc, tileLayerProgressPerc) {
                 return (isNaN(baseLayerProgressPerc) || baseLayerProgressPerc == 100 || baseLayerProgressPerc == -1 || baseLayerProgressPerc == 0)
@@ -180,8 +195,11 @@
                     view: new ol.View({
                         center: [2866694.308807251, -3783327.1520030843],
                         zoom: 5,
-                        maxZoom: 19
-                    })
+                        maxZoom: 19,
+                        minZoom: 2,
+                    }),
+                    loadTilesWhileAnimating: true,
+                    loadTilesWhileInteracting:true
                 });
                 _th.map.on('click', function (evt) {
                     _th.fire('map-click', evt);
@@ -191,8 +209,11 @@
                 this._updatewmsLayers();
                 this._updateVectorLayers();
                 this._updateHtmlOverlays();
+                this._updateClusterLayers();
                 $(this.$['ol3-map']).data('map', _th.map);
 
+                
+                
                 //this.$['sidebar'].sidebar();
             },
 
@@ -219,6 +240,10 @@
                 if (this._mutationObserverHtmlOverlays) {
                     this._mutationObserverHtmlOverlays.disconnect();
                     this._mutationObserverHtmlOverlays = null;
+                }
+                if (this._mutationObserverCluster) {
+                    this._mutationObserverCluster.disconnect();
+                    this._mutationObserverCluster = null;
                 }
             },
 
@@ -291,6 +316,43 @@
                 }
                 this._mutationObserverVector = new MutationObserver(this._updateVectorLayers.bind(this));
                 this._mutationObserverVector.observe(this.$.selectorVector, {
+                    childList: true
+                });
+            },
+
+            _updateClusterLayers: function () {
+                var newClusterLayers = Array.prototype.slice.call(
+                    Polymer.dom(this.$.Clusterlayers).getDistributedNodes());
+
+                // do not recompute if markers have not been added or removed
+                if (newClusterLayers.length === this.ClusterLayers.length) {
+                    var added = newClusterLayers.filter(function (m) {
+                        return this.ClusterLayers && this.ClusterLayers.indexOf(m) === -1;
+                    }.bind(this));
+                    if (added.length === 0) {
+                        // set up observer first time around
+                        if (!this._mutationObserverCluster) {
+                            this._observeClusterLayers();
+                        }
+                        return;
+                    }
+                }
+
+                this._observeClusterLayers();
+
+                this.ClusterLayers = this._setClusterLayers(newClusterLayers);
+
+                //// Set the map on each marker and zoom viewport to ensure they're in view.
+                this._attachChildrenToMap(this.ClusterLayers);
+            },
+            // watch for future updates to marker objects
+            _observeClusterLayers: function () {
+                // Watch for future updates.
+                if (this._mutationObserverCluster) {
+                    return;
+                }
+                this._mutationObserverCluster = new MutationObserver(this._updateClusterLayers.bind(this));
+                this._mutationObserverCluster.observe(this.$.selectorCluster, {
                     childList: true
                 });
             },

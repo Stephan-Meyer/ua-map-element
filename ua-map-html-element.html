@@ -6,6 +6,7 @@
         }*/
     </style>
     <template>
+        <span id="bootstrapPopoverContainer" class=""></span>
         <content>
             <div id="content" style="display: none;">
 
@@ -39,7 +40,9 @@
                     observer: 'layerVisibleBoolChanged',
                     value: false
                 },
-                overlay:Object
+                overlay: Object,
+                useBootstrapPopover: { type: Boolean, value: true },
+                boostrapPopoverTitle: Object
             },
 
             // Element Lifecycle
@@ -60,44 +63,78 @@
                 // This is a good place to perform any work related to your element's
                 // visual state or active behavior (measuring sizes, beginning animations,
                 // loading resources, etc).
-               
+
                 if (this.layerVisibleBool)
                     this.addOverlay();
                 else $(Polymer.dom(this).querySelector('overlay-content')).hide()
-               
-                
+
+
             },
             addOverlay: function () {
-                
+                var _th = this;
                 if (!this.layerVisibleBool)
                     return;
                 var _th = this;
+                if (typeof this.longitude === 'string')
+                    this.longitude = parseFloat(this.longitude);
+                if (typeof this.latitude === 'string')
+                    this.latitude = parseFloat(this.latitude);
+
                 var source = null;
-                var marker = new ol.Overlay({
-                    position: ol.proj.transform([this.longitude, this.latitude], this.projection, 'EPSG:3857'),
-                    positioning: 'center-center',
-                    element: Polymer.dom(this).querySelector('overlay-content'),
-                    stopEvent: false
-                });
+                var marker;
+                if (!this.useBootstrapPopover) {
+                    marker = new ol.Overlay({
+                        position: ol.proj.transform([this.longitude, this.latitude], this.projection, 'EPSG:3857'),
+                        positioning: 'center-center',
+                        element: Polymer.dom(this).querySelector('overlay-content'),
+                        stopEvent: false
+                    });
+                } else {
+                    $(this.$.bootstrapPopoverContainer).popover('destroy');
+                    marker = new ol.Overlay({
+                        position: ol.proj.transform([this.longitude, this.latitude], this.projection, 'EPSG:3857'),
+                        positioning: 'center-center',
+                        element: this.$.bootstrapPopoverContainer,
+                        stopEvent: false
+                    });
+                }
                 this.overlay = marker;
                 this.map.addOverlay(marker);
-                $(Polymer.dom(this).querySelector('overlay-content')).show()
+                $(Polymer.dom(this).querySelector('overlay-content')).show();
+
+                if (this.useBootstrapPopover) {
+                  
+                        $(_th.$.bootstrapPopoverContainer).popover({
+                        'placement': 'top',
+                        'animation': false,
+                        'html': true,
+                        'content': $(Polymer.dom(_th).querySelector('overlay-content')),
+                        'title': _th.boostrapPopoverTitle
+                    });
+                    
+                        $(_th.$.bootstrapPopoverContainer).popover('show');
+                   
+                    
+                }
             },
             removeOverlay: function () {
                 var _th = this;
                 this.map.removeOverlay(_th.overlay);
+         
             },
             layerVisibleBoolChanged: function (newValue, oldValue) {
                 if (oldValue != newValue) {
                     console.log(newValue)
-                        if (newValue)
-                            this.addOverlay();
-                        else this.removeOverlay();
-                    
+                    if (newValue)
+                        this.addOverlay();
+                    else this.removeOverlay();
+
                 }
             },
 
             detached: function () {
+                //if (this.useBootstrapPopover)
+                //    $(this.$.bootstrapPopoverContainer).popover('destroy');
                 // The analog to `attached`, `detached` fires when the element has been
                 // removed from a document.
                 //

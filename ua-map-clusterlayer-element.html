@@ -1,5 +1,5 @@
 ﻿<link rel="import" href="ua-map-point-element.html">
-<dom-module id="ua-map-vectorlayer-element">
+<dom-module id="ua-map-clusterlayer-element">
     <style>
         :host {
             display: none;
@@ -17,7 +17,7 @@
 
         Polymer({
 
-            is: 'ua-map-vectorlayer-element',
+            is: 'ua-map-clusterlayer-element',
 
             properties: {
                 map: {
@@ -32,14 +32,6 @@
                     type: Boolean,
                     observer: 'layerVisibleBoolChanged',
                     value: true
-                },
-                minResolution: {
-                    type: Object,
-                    observer: 'minResChanged',
-                },
-                maxResolution: {
-                    type: Object,
-                    observer: 'maxResChanged',
                 },
                 layerOpacity: {
                     type: Number,
@@ -212,21 +204,34 @@
                 },
                 enableHoverInteraction: {
                     type: Boolean,
-                    value: false,
-                    observer: "_enableHoverInteractionChanged"
+                    value: false
                 },
-                hoverInteraction: Object,
+                isCluster: { type: Boolean, value: true },
+                source: Object,
+                clusterFeatures: {
+                    type: Object,
+                    observer: "_clusterFeaturesChanged"
+                },
+                minResolution: {
+                    type: Object,
+                    observer: 'minResChanged',
+                },
+                maxResolution: {
+                    type: Object,
+                    observer: 'maxResChanged',
+                },
                 preRenderedFeatures: {
                     type: Object,
                     observer: "_preRenderedFeaturesChanged",
                     notify: true
                 },
-                idPropertyName:Object
+                source: Object,
+                idPropertyName: Object
             },
             _preRenderedFeaturesChanged: function (newVal, oldVal) {
                 var _th = this;
-                if (this.layer) {
-                    this.layer.getSource().clear();
+                if (this.source) {
+                    this.source.clear();
                     var formattedFeatures = new Array();
                     $.each(this.preRenderedFeatures, function (index, value) {
                         if (typeof value.Y === 'string')
@@ -237,62 +242,17 @@
                             geometry: new ol.geom.Point(ol.proj.transform([value.X, value.Y], 'EPSG:4326', 'EPSG:3857')),
                             attributes: {
                                 markerImgName: "marker.png",
-                                layer: _th.layer,
                                 Id: value[_th.idPropertyName]
                             }
                         }));
                     });
-                    this.layer.getSource().addFeatures(formattedFeatures);
-                }
-            },
-            hoverInteractionStyle: function (feature, resolution) {
-                if (!feature.get('attributes'))
-                    return null;
-                var _th = feature.get('attributes').layer
-                if (!feature.get('attributes') || !_th.enableHoverInteraction)
-                    return null;
-                
-                if (_th)
-                    return _th.enableLabels ? _th.styleFunctionWithLabels(feature, resolution, true) : _th.styleFunctionWithoutLabels(feature, resolution, true);
-            },
-            _enableHoverInteractionChanged: function (newValue, oldValue) {
-                var _th = this;
-                if (oldValue != newValue) {
-                    if (newValue) {
-
-                        this.hoverInteraction = new ol.interaction.Select({
-                            condition: ol.events.condition.pointerMove,
-                            style: this.hoverInteractionStyle
-                        });
-                        _th.map.addInteraction(this.hoverInteraction);
-                    } else {
-                        if (this.hoverInteraction)
-                            _th.map.removeInteraction(this.hoverInteraction);
-                    }
-                }
-            },
-            minResChanged: function (newValue, oldValue) {
-                if (oldValue != newValue) {
-                    if (this.map) {
-                        var layer = this.layer;
-                        if (layer)
-                            layer.setMinResolution(newValue);
-                    }
-                }
-            },
-            maxResChanged: function (newValue, oldValue) {
-                if (oldValue != newValue) {
-                    if (this.map) {
-                        var layer = this.layer;
-                        if (layer)
-                            layer.setMaxResolution(newValue);
-                    }
+                    this.source.addFeatures(formattedFeatures);
                 }
             },
             layerVisibleBoolChanged: function (newValue, oldValue) {
                 if (oldValue != newValue) {
                     if (this.map) {
-                        var layer = this.layer;
+                        var layer = this.getLayer();
                         if (layer)
                             layer.setVisible(newValue);
                     }
@@ -301,7 +261,7 @@
             layerOpacityChanged: function (newValue, oldValue) {
                 if (newValue != oldValue) {
                     if (this.map) {
-                        var layer = this.layer;
+                        var layer = this.getLayer();
                         if (layer)
                             layer.setOpacity(newValue / 100.00);
                     }
@@ -310,9 +270,8 @@
             enableLabelsChanged: function (newValue, oldValue) {
                 if (newValue != oldValue) {
                     if (this.map) {
-                        var layer = this.layer;
+                        var layer = this.getLayer();
                         if (layer)
-
                             layer.setStyle(newValue ? this.styleFunctionWithLabels : this.styleFunctionWithoutLabels);
                     }
                 }
@@ -342,53 +301,135 @@
                 var mapNode = Polymer.dom(this).parentNode;
                 if (_th.layerVisible)
                     _th.layerVisibleBool = _th.layerVisible ? (_th.layerVisible === "true" ? true : false) : true;
-                
+
                 var formattedFeatures = [];
-                if (this.preRenderedFeatures) {
-
-                    $.each(this.preRenderedFeatures, function (index, value) {
-                        if (typeof value.Y === 'string')
-                            value.Y = parseFloat(value.Y);
-                        if (typeof value.X === 'string')
-                            value.X = parseFloat(value.X);
-                        formattedFeatures.push(new ol.Feature({
-                            geometry: new ol.geom.Point(ol.proj.transform([value.X, value.Y], 'EPSG:4326', 'EPSG:3857')),
-                            attributes: {
-                                markerImgName: "marker.png",
-                                    layer:_th.layer
-                            }
-                        }));
-                    });
-                }
-                source = new ol.source.Vector();
-
+                //$.each(this.clusterFeatures, function (index, value) {
+                //    if (typeof value.Y === 'string')
+                //        value.Y = parseFloat(value.Y);
+                //    if (typeof value.X === 'string')
+                //        value.X = parseFloat(value.X);
+                //    formattedFeatures.push(new ol.Feature({
+                //        geometry: new ol.geom.Point(ol.proj.transform([value.X, value.Y], 'EPSG:4326', 'EPSG:3857')),
+                //        //attributes: {
+                //        //    markerImgName: this.markerImgName,
+                //        //    markerId: this.markerId,
+                //        //    label: this.label,
+                //        //    layerId: Polymer.dom(this).parentNode.layerId,
+                //        //    radius: this.radius
+                //        //}
+                //    }));
+                //});
 
 
-
+                this.source = new ol.source.Vector();
+                var clusterSource = new ol.source.Cluster({
+                    distance: 40,
+                    source: this.source,
+                });
+                var styleCache = {};
                 this.layer = new ol.layer.Vector({
-                    source: source,
+                    source: clusterSource,
                     visible: this.layerVisibleBool,
-                    id: this.layerId ? this.layerId : _th.map.getLayers().getArray().length,
-                    style: this.enableLabels ? this.styleFunctionWithLabels : this.styleFunctionWithoutLabels,
                     projection: "EPSG:3857",
-                    opacity: this.layerOpacity / 100.00,
+                    id: this.layerId ? this.layerId : _th.map.getLayers().getArray().length,
+                    style: function (feature, resolution) {
+                        if (!feature.get('features'))
+                            return null;
+                        var size = feature.get('features').length;
+                        var style = styleCache[size];
+                        if (!style) {
+
+
+                            style = [new ol.style.Style({
+                                image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
+                                    anchor: [0.5, 32],
+                                    anchorXUnits: 'fraction',
+                                    anchorYUnits: 'pixels',
+                                    opacity: 0.75,
+                                    src: "lib/ua-map-element/images/marker.png",
+
+                                })),
+                                text: new ol.style.Text({
+                                    text: size.toString(),
+                                    fill: new ol.style.Fill({
+                                        color: '#fff'
+                                    })
+                                })
+                            })];
+                            styleCache[size] = style;
+                        }
+                        return style;
+                    },
+                    projection: "EPSG:3857",
+                    opacity: this.layerOpacity / 100.00
                 })
+                _th.map.addLayer(this.layer);
 
                 if (typeof this.maxResolution != 'undefined')
                     this.layer.setMaxResolution(this.maxResolution);
                 if (typeof this.minResolution != 'undefined')
                     this.layer.setMinResolution(this.minResolution);
 
-                _th.map.addLayer(this.layer);
 
+                //var count = 20000;
+                //var features = new Array(count);
+                //var e = 4500000;
+                //for (var i = 0; i < count; ++i) {
+                //    var coordinates = [2 * e * Math.random() - e, 2 * e * Math.random() - e];
+                //    features[i] = new ol.Feature(new ol.geom.Point(coordinates));
+                //}
 
+                //var source = new ol.source.Vector({
+                //    features: features
+                //});
+
+                //var clusterSource = new ol.source.Cluster({
+                //    distance: 40,
+                //    source: source
+                //});
+
+                //var styleCache = {};
+                //var clusters = new ol.layer.Vector({
+                //    source: clusterSource,
+                //    style: function (feature, resolution) {
+                //        var size = feature.get('features').length;
+                //        var style = styleCache[size];
+                //        if (!style) {
+                //            style = [new ol.style.Style({
+                //                image: new ol.style.Circle({
+                //                    radius: 10,
+                //                    stroke: new ol.style.Stroke({
+                //                        color: '#fff'
+                //                    }),
+                //                    fill: new ol.style.Fill({
+                //                        color: '#3399CC'
+                //                    })
+                //                }),
+                //                text: new ol.style.Text({
+                //                    text: size.toString(),
+                //                    fill: new ol.style.Fill({
+                //                        color: '#fff'
+                //                    })
+                //                })
+                //            })];
+                //            styleCache[size] = style;
+                //        }
+                //        return style;
+                //    }
+                //});
+                //_th.map.addLayer(clusters);
+
+                function geometryStyle(feature, resolution) {
+                    var _th = feature.get('attributes').layer
+                    return _th.enableLabels ? _th.styleFunctionWithLabels(feature, resolution, true) : _th.styleFunctionWithoutLabels(feature, resolution, true);
+                }
 
                 if (_th.enableHoverInteraction) {
-                    _th.hoverInteraction = new ol.interaction.Select({
+                    var hoverInteraction = new ol.interaction.Select({
                         condition: ol.events.condition.pointerMove,
-                        style: _th.hoverInteractionStyle
+                        style: geometryStyle
                     });
-                    _th.map.addInteraction(_th.hoverInteraction);
+                    _th.map.addInteraction(hoverInteraction);
                     _th.map.on('pointermove', function (e) {
                         if (e.dragging) return;
 
@@ -400,11 +441,27 @@
                 }
 
                 this._updateFeature();
-                //if (this.preRenderedFeatures && this.zoomToExtent)
-                //this.zoomToExtent();
 
             },
 
+            minResChanged: function (newValue, oldValue) {
+                if (oldValue != newValue) {
+                    if (this.map) {
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setMinResolution(newValue);
+                    }
+                }
+            },
+            maxResChanged: function (newValue, oldValue) {
+                if (oldValue != newValue) {
+                    if (this.map) {
+                        var layer = this.getLayer();
+                        if (layer)
+                            layer.setMaxResolution(newValue);
+                    }
+                }
+            },
             styleFunctionWithLabels: function (feature, resolution, hover) {
                 var createTextStyle = function (feature, resolution, dom) {
                     var align = "center";
@@ -468,8 +525,7 @@
                 var styleParams;
                 if (hover)
                     styleParams = _th.hoverStyles[feature.getGeometry().getType()][0];
-                else if (!feature.get('attributes').radius)
-                    styleParams = _th.styles[feature.getGeometry().getType()][0];
+                else styleParams = _th.styles[feature.getGeometry().getType()][0];
                 styleParams.text = createTextStyle(feature, resolution, null)
 
                 var style = new ol.style.Style(styleParams);
@@ -510,8 +566,7 @@
                 var style;
                 if (hover)
                     style = new ol.style.Style(_th.styles[feature.getGeometry().getType()][0]);
-                else if (!feature.get('attributes').radius)
-                    style = new ol.style.Style(_th.styles[feature.getGeometry().getType()][0]);
+                else style = new ol.style.Style(_th.styles[feature.getGeometry().getType()][0]);
 
                 if (feature.get('attributes').radius)
                     style = new ol.style.Style({

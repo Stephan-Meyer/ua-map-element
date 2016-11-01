@@ -1,6 +1,5 @@
 {
   "name": "ua-map-element",
-  "version": "1.0.14",
   "authors": [
     "Stephan Meyer Stephan@Urbanautomation.co.za"
   ],
@@ -36,13 +35,13 @@
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
     "web-component-tester": "*"
   },
-  "_release": "1.0.13",
+  "_release": "bcf4b543fa",
   "_resolution": {
-    "type": "version",
-    "tag": "v1.0.13",
-    "commit": "779d65e05e53188df4e92bd11ba1803d3d84f840"
+    "type": "branch",
+    "branch": "master",
+    "commit": "bcf4b543faa628e274ddda624b60959cfbabf962"
   },
-  "_source": "https://github.com/stephan-meyer/ua-map-element.git",
-  "_target": "^1.0.1",
-  "_originalSource": "ua-map-element"
+  "_source": "https://github.com/Stephan-Meyer/ua-map-element.git",
+  "_target": "master",
+  "_originalSource": "https://github.com/Stephan-Meyer/ua-map-element.git"
 }

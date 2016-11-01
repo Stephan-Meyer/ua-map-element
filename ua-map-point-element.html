@@ -34,9 +34,10 @@
                     value: false
                 },
                 markerImgName: String,
-                markerId:String,
-                label:String,
-                radius:Number
+                markerId: String,
+                label: String,
+                radius: Number,
+                wkt: String
             },
 
             // Element Lifecycle
@@ -58,23 +59,45 @@
                 // loading resources, etc).
                 var _th = this;
                 var source = null;
-                console.log('attach' + this.markerId);
-                
-                this.feature = new ol.Feature({
-                    geometry: new ol.geom.Point(ol.proj.transform([this.longitude, this.latitude], this.projection, 'EPSG:3857')),
-                    attributes: {
-                        markerImgName: this.markerImgName,
+                var hasFeature = false;
+                if (this.longitude && this.latitude && this.longitude != null && this.latitude != null) {
+                    if (typeof this.longitude === 'string')
+                        this.longitude = parseFloat(this.longitude);
+                    if (typeof this.latitude === 'string')
+                        this.latitude = parseFloat(this.latitude);
+                    this.feature = new ol.Feature({
+                        geometry: new ol.geom.Point(ol.proj.transform([this.longitude, this.latitude], this.projection, 'EPSG:3857')),
+                        attributes: {
+                            markerImgName: this.markerImgName,
+                            markerId: this.markerId,
+                            label: this.label,
+                            layerId: Polymer.dom(this).parentNode.layerId,
+                            radius: this.radius
+                        }
+                    });
+                    hasFeature = true;
+                }
+                else if (this.wkt) {
+                    this.feature = (new ol.format.WKT()).readFeature(this.wkt);
+                    this.feature.set('attributes', {
                         markerId: this.markerId,
                         label: this.label,
                         layerId: Polymer.dom(this).parentNode.layerId,
-                        radius: this.radius
-                    }
-                });
-                this.layer = Polymer.dom(this).parentNode.layer;
-                this.layer.getSource().addFeature(this.feature);
+                        layer: Polymer.dom(this).parentNode
+                    });
+                    this.feature.getGeometry().transform(this.projection, 'EPSG:3857')
+                    hasFeature = true;
+                }
+                if (!hasFeature)
+                    return;
+
+                var layerElem = Polymer.dom(this).parentNode;
+                this.layer = layerElem.layer;
+                if (layerElem.isCluster)
+                    layerElem.source.addFeature(this.feature);
+                else this.layer.getSource().addFeature(this.feature);
                 if (_th.zoomToExtent)
                     Polymer.dom(this).parentNode.zoomToExtent();
-
             },
 
             detached: function () {
