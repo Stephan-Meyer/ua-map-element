@@ -103,24 +103,24 @@
                 $(Polymer.dom(this).querySelector('overlay-content')).show();
 
                 if (this.useBootstrapPopover) {
-                  
-                        $(_th.$.bootstrapPopoverContainer).popover({
+
+                    $(_th.$.bootstrapPopoverContainer).popover({
                         'placement': 'top',
                         'animation': false,
                         'html': true,
                         'content': $(Polymer.dom(_th).querySelector('overlay-content')),
                         'title': _th.boostrapPopoverTitle
                     });
-                    
-                        $(_th.$.bootstrapPopoverContainer).popover('show');
-                   
-                    
+
+                    $(_th.$.bootstrapPopoverContainer).popover('show');
+
+
                 }
             },
             removeOverlay: function () {
                 var _th = this;
                 this.map.removeOverlay(_th.overlay);
-         
+
             },
             layerVisibleBoolChanged: function (newValue, oldValue) {
                 if (oldValue != newValue) {
@@ -140,7 +140,7 @@
                 //
                 // Use this to clean up anything you did in `attached`.
                 this.removeOverlay();
-
+                $(this.$.bootstrapPopoverContainer).popover('destroy');
 
             }
         });
