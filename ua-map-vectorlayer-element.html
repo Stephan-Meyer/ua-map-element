@@ -51,7 +51,7 @@
                     value: function () { return []; },
                     readOnly: true
                 },
-                zoomToExtent: {
+                zoomToExtentEnabled: {
                     type: Boolean,
                     value: false
                 },
@@ -236,13 +236,16 @@
                         formattedFeatures.push(new ol.Feature({
                             geometry: new ol.geom.Point(ol.proj.transform([value.X, value.Y], 'EPSG:4326', 'EPSG:3857')),
                             attributes: {
-                                markerImgName: "marker.png",
+                                markerImgName: value.markerImgName ? value.markerImgName : "marker.png",
                                 layer: _th.layer,
                                 Id: value[_th.idPropertyName]
                             }
                         }));
                     });
                     this.layer.getSource().addFeatures(formattedFeatures);
+
+                    if (_th.zoomToExtentEnabled)
+                        _th.zoomToExtent();
                 }
             },
             hoverInteractionStyle: function (feature, resolution) {
@@ -264,7 +267,8 @@
                             condition: ol.events.condition.pointerMove,
                             style: this.hoverInteractionStyle
                         });
-                        _th.map.addInteraction(this.hoverInteraction);
+                        if (_th.map)
+                            _th.map.addInteraction(this.hoverInteraction);
                     } else {
                         if (this.hoverInteraction)
                             _th.map.removeInteraction(this.hoverInteraction);

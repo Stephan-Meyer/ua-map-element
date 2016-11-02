@@ -1,5 +1,5 @@
 ﻿
-<dom-module id="ua-map-layercontrol-element">
+<dom-module id="ua-map-legendcontrol-element">
     <style>
         :host {
             background-color: black;
@@ -27,73 +27,25 @@
             --paper-toggle-button-unchecked-button-color: rgba(243, 111, 70, 0.4);
             --paper-toggle-button-unchecked-ink-color: rgba(243, 111, 70, 0.4);
         }
-         paper-toggle-button{
+
+        paper-toggle-button{
             --paper-toggle-button-label-color:white;
         }
     </style>
     <template>
         <h1 class="sidebar-header">
-            <strong>LAYERS</strong>
+            <strong>LEGEND</strong>
             <div class="sidebar-close"><i class="mdi-close mdi"></i></div>
         </h1>
-        <paper-material elevation="2" style="padding:10px">
-            <h4 style="color:rgba(243, 111, 70, 1)">Base Layers</h4>
-            <template is="dom-repeat" items="{{baseLayers}}">
-                <div><paper-toggle-button on-change="change" class$="baseToggle{{item.layerId}} orange baseToggle" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button></div>
-            </template>
-        </paper-material>
-
-        <paper-material elevation="2" style="padding:10px">
-            <h4 style="color:rgba(243, 111, 70, 1)">Other Layers</h4>
-            <template is="dom-repeat" items="{{wmsLayers}}">
-                <div>
-                    <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
-                    <paper-slider hidden$="{{!item.layerVisibleBool}}" class="orange" style="padding-left:35px; width:100%" min="0" max="100" value="{{item.layerOpacity}}"></paper-slider>
-                </div>
-            </template>
-            <template is="dom-repeat" items="{{vectorLayers}}">
-                <div>
-                    <paper-material elevation="2" style="padding:10px">
-                        <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
-                        <div hidden$="{{!item.layerVisibleBool}}" style="padding-left:35px;">
-                            <paper-toggle-button class="green" checked="{{item.enableLabels}}">Show Labels?</paper-toggle-button>
-                            <paper-slider class="orange" style="width:100%" min="0" max="100" value="{{item.layerOpacity}}"></paper-slider>
-                            <paper-button style="background-color:rgba(243, 111, 70, 1);"  raised on-click="_zoomExtent"><i class="mdi mdi-target"></i>Zoom To Extent</paper-button>
-                        </div>
-                    </paper-material>
-                </div>
-            </template>
-            <template is="dom-repeat" items="{{computedHtmlElementLayers}}">
-                <div>
-                    <paper-material elevation="2" style="padding:10px">
-                        <div hidden$="{{!item.layerVisibleBool}}" style="padding-left:35px;">
-                            <paper-toggle-button class="orange" checked="{{item.layerVisibleBool}}">{{item.layername}}</paper-toggle-button>
-                            <!--<paper-button style="background-color:rgba(243, 111, 70, 1);" raised on-click="_zoomExtent"><i class="mdi mdi-target"></i>Zoom To Extent</paper-button>-->
-                        </div>
-                    </paper-material>
-                </div>
-            </template>
-        </paper-material>
-        <paper-material elevation="2" style="padding:10px">
-            <h4 style="color:rgba(243, 111, 70, 1)">Legend</h4>
-            <template is="dom-repeat" items="{{wmsLayers}}" filter="_isLayerVisible">
-                <div>
-                    <img src='{{getLegendUrl(item)}}' />
-                </div>
-            </template>
-            <!--<template is="dom-repeat" items="{{vectorLayers}}" filter="_isLayerVisible">
-                <div>
-                    <img src='{{getLegendUrl(item)}}' />
-                </div>
-            </template>-->
-        </paper-material>
+            <content></content>
+           
 
     </template>
     <script>
 
         Polymer({
 
-            is: 'ua-map-layercontrol-element',
+            is: 'ua-map-legendcontrol-element',
 
             properties: {
                 map: {
