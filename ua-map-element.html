@@ -64,7 +64,7 @@
             }
         </style>
         <!--<paper-material elevation="5">-->
-        <div id="sidebar" class="sidebar collapsed drop">
+        <div hidden$="{{hideSidebar}}" id="sidebar" class="sidebar collapsed drop">
             <!-- Nav tabs -->
             <div class="sidebar-tabs">
                 <ul role="tablist">
@@ -168,6 +168,10 @@
                     observer: "_zoomExtentChanged"
                 },
                 loading: {
+                    type: Boolean,
+                    value: false
+                },
+                hideSidebar: {
                     type: Boolean,
                     value: false
                 }
